@@ -28,7 +28,11 @@
         }
       ).then(({ data: { text } }) => {
         console.log("Raw OCR Output:", text);
-        const match = text.match(/[A-HJ-NPR-Z0-9]{17}/); // VIN pattern
+
+        const normalized = text.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+        console.log("Normalized Text:", normalized);
+
+        const match = normalized.match(/[A-HJ-NPR-Z0-9]{17}/);
         const vin = match ? match[0] : "No VIN detected";
         document.getElementById('output').textContent = "Detected VIN: " + vin;
       }).catch(err => {
@@ -39,4 +43,3 @@
   </script>
 </body>
 </html>
-
