@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>VIN Scanner</title>
+  <script src="https://unpkg.com/@ericblade/quagga2@1.2.6/dist/quagga.min.js"></script>
+  <style>
+    #scanner-container {
+      width: 100%;
+      max-width: 500px;
+      margin: auto;
+      border: 2px solid #ccc;
+    }
+    #status {
+      text-align: center;
+      font-size: 1.2em;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h2 style="text-align:center;">VIN Scanner</h2>
+  <div id="scanner-container"></div>
+  <div id="status">Initializing scanner...</div>
+
+  <script>
+    const endpointUrl = "https://script.google.com/macros/s/AKfycbykdN9TyDVrWzjliVO7bx7znLhnQSVmRwgjCXtst4S1ERhnUxkGaMobNslxbFe7YG9V/exec";
+
+    function startScanner() {
+      Quagga.init({
+        inputStream: {
+          name: "Live",
+          type: "LiveStream",
+          target: document.querySelector('#scanner-container'),
+          constraints: {
+            facingMode: "environment"
+          }
+        },
+        decoder: {
+          readers: ["code_39_reader", "code_128_reader", "pdf417_reader"]
+        },
+      }, function(err) {
+        if (err) {
+          document.getElementById("status").innerText = "Error initializing scanner: " + err;
+          return;
+        }
+        Quagga.start();
+        document.getElementById("status").innerText = "Scanning for VIN...";
+      });
+
+      Quagga.onDetected(data => {
+        const vin = data.codeResult.code;
+        Quagga.stop();
+        document.getElementById("status").innerText = "VIN detected: " + vin;
+
+        fetch(endpointUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "vin=" + encodeURIComponent(vin)
+        })
+        .then(res => res.text())
+        .then(response => {
+          document.getElementById("status").innerText += "\\nSubmitted: " + response;
+        })
+        .catch(err => {
+          document.getElementById("status").innerText += "\\nError: " + err;
+        });
+      });
+    }
+
+    window.addEventListener('load', startScanner);
+  </script>
+</body>
+</html>
