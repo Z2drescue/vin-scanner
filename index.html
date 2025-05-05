@@ -48,6 +48,8 @@
       });
 
       Quagga.onDetected(data => {
+        console.log("VIN detected:", data.codeResult.code); // Log detection to console
+
         const vin = data.codeResult.code;
         Quagga.stop();
         document.getElementById("status").innerText = "VIN detected: " + vin;
@@ -59,10 +61,10 @@
         })
         .then(res => res.text())
         .then(response => {
-          document.getElementById("status").innerText += "\\nSubmitted: " + response;
+          document.getElementById("status").innerText += "\nSubmitted: " + response;
         })
         .catch(err => {
-          document.getElementById("status").innerText += "\\nError: " + err;
+          document.getElementById("status").innerText += "\nError: " + err;
         });
       });
     }
