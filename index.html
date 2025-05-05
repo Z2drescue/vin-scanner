@@ -1,75 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>VIN Scanner</title>
-  <script src="https://unpkg.com/@ericblade/quagga2@1.2.6/dist/quagga.min.js"></script>
+  <title>VIN OCR Scanner</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
   <style>
-    #scanner-container {
-      width: 100%;
-      max-width: 500px;
-      margin: auto;
-      border: 2px solid #ccc;
-    }
-    #status {
-      text-align: center;
-      font-size: 1.2em;
-      margin-top: 10px;
-    }
+    body { font-family: Arial; text-align: center; padding: 20px; }
+    #output { margin-top: 20px; font-weight: bold; }
   </style>
 </head>
 <body>
-  <h2 style="text-align:center;">VIN Scanner</h2>
-  <div id="scanner-container"></div>
-  <div id="status">Initializing scanner...</div>
+  <h2>Upload or Take a VIN Photo</h2>
+  <input type="file" accept="image/*" capture="environment" onchange="handleImageUpload(event)">
+  <div id="output">Awaiting image...</div>
 
   <script>
-    const endpointUrl = "https://script.google.com/macros/s/AKfycbykdN9TyDVrWzjliVO7bx7znLhnQSVmRwgjCXtst4S1ERhnUxkGaMobNslxbFe7YG9V/exec";
+    function handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
 
-    function startScanner() {
-      Quagga.init({
-        inputStream: {
-          name: "Live",
-          type: "LiveStream",
-          target: document.querySelector('#scanner-container'),
-          constraints: {
-            facingMode: "environment"
-          }
-        },
-        decoder: {
-          readers: ["code_39_reader", "code_128_reader"]
-        },
-      }, function(err) {
-        if (err) {
-          document.getElementById("status").innerText = "Error initializing scanner: " + err;
-          return;
+      document.getElementById('output').textContent = "Scanning...";
+
+      Tesseract.recognize(
+        file,
+        'eng',
+        {
+          logger: m => console.log(m)
         }
-        Quagga.start();
-        document.getElementById("status").innerText = "Scanning for VIN...";
-      });
-
-      Quagga.onDetected(data => {
-        console.log("VIN detected:", data.codeResult.code); // Log detection to console
-
-        const vin = data.codeResult.code;
-        Quagga.stop();
-        document.getElementById("status").innerText = "VIN detected: " + vin;
-
-        fetch(endpointUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "vin=" + encodeURIComponent(vin)
-        })
-        .then(res => res.text())
-        .then(response => {
-          document.getElementById("status").innerText += "\nSubmitted: " + response;
-        })
-        .catch(err => {
-          document.getElementById("status").innerText += "\nError: " + err;
-        });
+      ).then(({ data: { text } }) => {
+        console.log("Raw OCR Output:", text);
+        const match = text.match(/[A-HJ-NPR-Z0-9]{17}/); // VIN pattern
+        const vin = match ? match[0] : "No VIN detected";
+        document.getElementById('output').textContent = "Detected VIN: " + vin;
+      }).catch(err => {
+        console.error(err);
+        document.getElementById('output').textContent = "Error reading image.";
       });
     }
-
-    window.addEventListener('load', startScanner);
   </script>
 </body>
 </html>
+
