@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: vin-extractor-api
+    env: python
+    buildCommand: ""
+    startCommand: gunicorn vin_extractor_api:app
